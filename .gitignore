@@ -1,0 +1,14 @@
+/FTPServer/.idea
+/FTPServer/target
+/FTPServer/src/test
+/FTPServer/src/main/resources
+/FTPServer/src/main/java/org/barbaris/FTPServer/DatabaseInfo.java
+
+/FTPClient/.idea
+/FTPClient/.mvn
+/FTPClient/target
+/FTPClient/mvnw
+/FTPClient/mvnw.cmd
+/FTPClient/src/test
+/FTPClient/src/main/resources/static/files/
+/FTPClient/src/main/resources/application.properties

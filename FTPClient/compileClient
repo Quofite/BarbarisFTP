@@ -1,0 +1,5 @@
+#!/bin/bash 
+cd "/home/gleb/Coding/FTP/FTPClient/"
+mvn clean package
+cd "/home/gleb/Coding/FTP/FTPClient/target"
+java -jar ftpclient-0.0.1-SNAPSHOT.jar
