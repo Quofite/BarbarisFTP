@@ -1,11 +1,10 @@
 package org.barbaris.ftpclient.controller;
 
+import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
+import org.barbaris.ftpclient.models.FTPServerData;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -95,4 +94,39 @@ public class HelpingMethodsController {
             // TODO: нормальный вывод об ошибке
         }
     }
+
+    // UPLOAD TO FTP SERVER METHOD
+    public static boolean upload(String name, String pass, String fileName) {
+        // crating connection
+        FTPClient client = new FTPClient();
+        FTPServerData data = new FTPServerData();
+
+        try {
+            client.connect(data.getUrl(), data.getPort());
+            if(client.login(name, pass)) {
+                client.enterLocalPassiveMode();
+                client.setFileType(FTP.BINARY_FILE_TYPE);
+
+                // saving file into ftp server
+                File localFile = new File("/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/" + fileName);
+                InputStream stream = new FileInputStream(localFile);
+                boolean success = client.storeFile(fileName, stream);
+                stream.close();
+
+                if(success) {
+                    return true;
+                }
+            } else {
+                return false;
+            }
+
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
+            return false;
+        }
+
+        return false;
+    }
+
+
 }

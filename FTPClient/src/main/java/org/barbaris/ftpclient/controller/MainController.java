@@ -12,6 +12,7 @@ import org.barbaris.ftpclient.models.FTPServerData;
 import org.barbaris.ftpclient.models.FileModel;
 import org.barbaris.ftpclient.models.UserModel;
 import org.barbaris.ftpclient.services.UserService;
+import org.springframework.beans.PropertyEditorRegistrar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -23,8 +24,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -209,6 +215,55 @@ public class MainController {
         HelpingMethodsController.download(client, files, name);
 
         return "redirect:/";
+    }
+
+    // -------------------------------------------- FILES UPLOADING METHODS
+
+    @PostMapping("/upload")
+    public String upload(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+        // Session check
+        HttpSession session = request.getSession();
+        String name = (String) session.getAttribute("name");
+        String pass = (String) session.getAttribute("password");
+
+        if(name == null) {
+            return "redirect:/login";
+        }
+
+        // getting and setting file info
+        String fileName = file.getOriginalFilename();
+        String dir = "/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/";
+        Path uploadDir = Paths.get(dir);
+
+        try {
+            if(!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            // saving uploaded files into client directory
+            try(InputStream stream = file.getInputStream()) {
+                Path filePath = uploadDir.resolve(fileName);
+                FileUtils.cleanDirectory(new File(dir));
+                Files.copy(stream, filePath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
+        }
+
+        // streaming that file into ftp server via custom method
+        if(HelpingMethodsController.upload(name, pass, fileName)) {
+            try {
+                FileUtils.cleanDirectory(new File(dir));
+            } catch (Exception ignored) {}
+            return "redirect:/";
+        } else {
+            try {
+                FileUtils.cleanDirectory(new File(dir));
+            } catch (Exception ignored) {}
+            return "error";
+        }
     }
 
 

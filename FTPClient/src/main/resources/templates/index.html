@@ -32,8 +32,8 @@
                 </div>
             </div>
             <div class="col-4">
-                <form method="post" action="/upload">
-                    <input type="file" class="form-control" id="upload">
+                <form method="post" action="/upload" enctype="multipart/form-data">
+                    <input type="file" class="form-control" id="file" name="file">
                     <input class="mt-2 btn btn-primary" value="Загрузить файл" type="submit">
                 </form>
                 

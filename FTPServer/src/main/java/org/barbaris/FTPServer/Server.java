@@ -121,17 +121,11 @@ public class Server {
 
             @Override
             public FtpletResult onConnect(FtpSession ftpSession) throws FtpException, IOException {
-                System.out.println("CONNECTED ------------------------------- ");
-                System.out.println(ftpSession.getClientAddress().toString());
-                System.out.println("\n");
                 return FtpletResult.DEFAULT;
             }
 
             @Override
             public FtpletResult onDisconnect(FtpSession ftpSession) throws FtpException, IOException {
-                System.out.println("DISCONNECTED ------------------------------- ");
-                System.out.println(ftpSession.getClientAddress().toString());
-                System.out.println("\n");
                 return FtpletResult.DEFAULT;
             }
         });
