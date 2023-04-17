@@ -38,6 +38,10 @@
                 </form>
                 
                 <button class="mt-4 btn btn-success" id="download">Скачать выбранные файлы</button>
+
+                <div class="mt-3 alert alert-danger" id="error" role="alert" th:attr="hidden=${is_hidden}">
+                    <strong>Ошибка</strong> <p id="error_message" th:text="${error_message}"></p>
+                  </div>
             </div>
         </div>
     </div>

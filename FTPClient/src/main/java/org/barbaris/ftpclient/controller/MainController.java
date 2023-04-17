@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -49,7 +50,6 @@ public class MainController {
 
     @GetMapping("/")
     public String index(HttpServletRequest request, Model model) {
-
         // Getting session data
         HttpSession session = request.getSession();
         String name = (String) session.getAttribute("name");
@@ -110,7 +110,8 @@ public class MainController {
 
 
         model.addAttribute("files", files);
-
+        model.addAttribute("is_hidden", true);
+        model.addAttribute("error_message", "-");
         return "index";
     }
 
@@ -130,7 +131,6 @@ public class MainController {
         try {
             outputZip.createNewFile();
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
@@ -160,7 +160,9 @@ public class MainController {
 
             zipStream.close();
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Location", "/");
+            return new ResponseEntity<String>(headers, HttpStatus.FOUND);
         }
 
         // block that response to user with zip file
@@ -177,21 +179,23 @@ public class MainController {
                 try {
                     FileUtils.delete(new File(path + fileName));
                 } catch (Exception ex) {
-                    System.out.println(ex.getMessage());
+                    HttpHeaders errHeaders = new HttpHeaders();
+                    headers.add("Location", "/");
+                    return new ResponseEntity<String>(errHeaders, HttpStatus.FOUND);
                 }
             }
 
             return ResponseEntity.ok().headers(headers).contentLength(outputZip.length()).contentType(MediaType.MULTIPART_MIXED).body(resource);
 
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Location", "/");
+            return new ResponseEntity<String>(headers, HttpStatus.FOUND);
         }
-
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @GetMapping("/downloadFtp")     // method that downloads files to the CLIENT server
-    public String downloadFtp(@RequestParam String files, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity downloadFtp(@RequestParam String files, HttpServletRequest request, HttpServletResponse response) {
         HttpSession session = request.getSession();
         String name = (String) session.getAttribute("name");
         String pass = (String) session.getAttribute("password");
@@ -208,13 +212,17 @@ public class MainController {
             client.setFileType(FTP.BINARY_FILE_TYPE);
             client.setControlEncoding("UTF-8");
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            return new ResponseEntity<String>(HttpStatus.GATEWAY_TIMEOUT);
         }
 
         // custom downloading method
-        HelpingMethodsController.download(client, files, name);
-
-        return "redirect:/";
+        if(HelpingMethodsController.download(client, files, name)) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Location", "/");
+            return new ResponseEntity<String>(headers, HttpStatus.FOUND);
+        } else {
+            return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
+        }
     }
 
     // -------------------------------------------- FILES UPLOADING METHODS
@@ -233,23 +241,28 @@ public class MainController {
         // getting and setting file info
         String fileName = file.getOriginalFilename();
         String dir = "/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/";
-        Path uploadDir = Paths.get(dir);
+        Path path = Paths.get(dir);
+        try {
+            Files.createDirectories(path);
+        } catch(Exception ex) {
+            return "error";
+        }
 
         try {
-            if(!Files.exists(uploadDir)) {
-                Files.createDirectories(uploadDir);
+            if(!Files.exists(path)) {
+                Files.createDirectories(path);
             }
 
             // saving uploaded files into client directory
             try(InputStream stream = file.getInputStream()) {
-                Path filePath = uploadDir.resolve(fileName);
+                Path filePath = path.resolve(fileName);
                 FileUtils.cleanDirectory(new File(dir));
                 Files.copy(stream, filePath, StandardCopyOption.REPLACE_EXISTING);
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                return "error";
             }
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            return "error";
         }
 
         // streaming that file into ftp server via custom method

@@ -69,30 +69,41 @@ public class HelpingMethodsController {
     }
 
     // DOWNLOAD FROM FTP SERVER METHOD
-    public static void download(FTPClient client, String files, String name) {
+    public static boolean download(FTPClient client, String files, String name) {
         try {
             Files.createDirectories(Paths.get("/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/"));
 
             String[] fileNames = files.split(";");
+            String[] remoteFileNames = client.listNames();
+
+            for (String fileName : fileNames) {
+                boolean isExists = false;
+                for (String remoteFileName : remoteFileNames) {
+                    if(fileName.equals(remoteFileName)) {
+                        isExists = true;
+                        break;
+                    }
+                }
+
+                if(!isExists) {
+                    return false;
+                }
+            }
 
             for (String remoteFile : fileNames) {
                 File downloaded = new File("/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/" + remoteFile);
 
                 OutputStream download = new BufferedOutputStream(new FileOutputStream(downloaded));
-                boolean success = client.retrieveFile(remoteFile, download);
-
-                if (success) {
-                    System.out.println("Downloaded " + remoteFile);
-                }
+                client.retrieveFile(remoteFile, download);
 
                 download.flush();
                 download.close();
-
             }
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
-            // TODO: нормальный вывод об ошибке
+            return false;
         }
+
+        return true;
     }
 
     // UPLOAD TO FTP SERVER METHOD
@@ -121,7 +132,6 @@ public class HelpingMethodsController {
             }
 
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
             return false;
         }
 

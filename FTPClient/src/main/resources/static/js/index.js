@@ -14,7 +14,22 @@ document.getElementById("download").addEventListener("click", (e) => {
     request.open("GET", "http://localhost:8080/downloadFtp?files=" + requestString, false);
 
     request.addEventListener("load", (e) => {
-        window.location.href = "http://localhost:8080/download?files=" + requestString;
+        var code = request.status;
+        var errorBox = document.getElementById("error");
+        var errorMessage = document.getElementById("error_message");
+        
+        if(code === 404) {
+            errorBox.removeAttribute("hidden");
+            errorMessage.innerText = "Файл не найден";
+        } else if(code === 500) {
+            errorBox.removeAttribute("hidden");
+            errorMessage.innerText = "Не удалось скачать файл";
+        } else if(code === 504) {
+            errorBox.removeAttribute("hidden");
+            errorMessage.innerText = "Не удалось подключиться к серверу";
+        } else {
+            window.location.href = "http://localhost:8080/download?files=" + requestString;
+        }
     });
 
     request.send();
