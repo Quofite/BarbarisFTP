@@ -12,7 +12,6 @@ import org.barbaris.ftpclient.models.FTPServerData;
 import org.barbaris.ftpclient.models.FileModel;
 import org.barbaris.ftpclient.models.UserModel;
 import org.barbaris.ftpclient.services.UserService;
-import org.springframework.beans.PropertyEditorRegistrar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -32,12 +31,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 @Controller
 public class MainController {
+
+    // INITIALIZING INSTANCES
+    private FTPClient client;
     private final UserService service;
 
     @Autowired
@@ -53,58 +54,36 @@ public class MainController {
         // Getting session data
         HttpSession session = request.getSession();
         String name = (String) session.getAttribute("name");
-        String pass = (String) session.getAttribute("password");
 
         if(name == null) {
             return "redirect:/login";
         }
 
+        HelpingMethodsController.userNameFileDebuger(name);
         model.addAttribute("name", name);
-
-        // creating ftp server instances
-        FTPClient client = new FTPClient();
-        FTPServerData data = new FTPServerData();
         ArrayList<FileModel> files = new ArrayList<>();
 
         try {
-            // connecting to ftp server
-            client.connect(data.getUrl(), data.getPort());
-            client.setControlEncoding("UTF-8");
-            int response = client.getReplyCode();
+            FTPFile[] ftpFiles = client.listFiles();  // getting all user's files
 
-            if(!FTPReply.isPositiveCompletion(response)) {
-                model.addAttribute("is_hidden", false);
-                model.addAttribute("error_message", "Внутренняя ошибка сервера");
-                return "login";
-            }
+            for(FTPFile file : ftpFiles) {      // and putting it all to the html file
+                FileModel fileModel = new FileModel();
 
-            if(client.login(name, pass)) {
-                // getting the list of all files that user has...
-                FTPFile[] ftpFiles = client.listFiles();
+                String fName = file.getName();
+                String[] splited = fName.split("\\.");
+                String resolution = splited[splited.length - 1];
+                fileModel.setFileName(fName);
+                fileModel.setResolution(resolution);
 
-                // ... and putting it into the list that will be places in html file
-                for(FTPFile file : ftpFiles) {
-                    FileModel fileModel = new FileModel();
+                fileModel.setImageType(HelpingMethodsController.getFileImage(resolution));
 
-                    String fName = file.getName();
-                    String[] splited = fName.split("\\.");
-                    String resolution = splited[splited.length - 1];
-                    fileModel.setFileName(fName);
-                    fileModel.setResolution(resolution);
-
-                    fileModel.setImageType(HelpingMethodsController.getFileImage(resolution));
-
-                    files.add(fileModel);
-                }
-            } else {
-                model.addAttribute("is_hidden", false);
-                model.addAttribute("error_message", "Внутренняя ошибка сервера");
-                return "login";
+                files.add(fileModel);
             }
 
         } catch (IOException ex) {
             model.addAttribute("is_hidden", false);
-            model.addAttribute("error_message", "Внутренняя ошибка сервера");
+            model.addAttribute("error_message", "Не удалось подключиться к файловому серверу");
+            System.out.println(ex.getMessage());
             return "login";
         }
 
@@ -167,7 +146,7 @@ public class MainController {
 
         // block that response to user with zip file
         try {
-            InputStreamResource resource = new InputStreamResource(new FileInputStream(outputZip));
+            InputStreamResource resource = new InputStreamResource(Files.newInputStream(outputZip.toPath()));
 
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + outputZip.getName());
@@ -198,16 +177,11 @@ public class MainController {
     public ResponseEntity downloadFtp(@RequestParam String files, HttpServletRequest request, HttpServletResponse response) {
         HttpSession session = request.getSession();
         String name = (String) session.getAttribute("name");
-        String pass = (String) session.getAttribute("password");
 
-        // ftp connection instances creation
-        FTPClient client = new FTPClient();
-        FTPServerData data = new FTPServerData();
+        HelpingMethodsController.userNameFileDebuger(name);
 
         // connecting to server
         try {
-            client.connect(data.getUrl(), data.getPort());
-            client.login(name, pass);
             client.enterLocalPassiveMode();
             client.setFileType(FTP.BINARY_FILE_TYPE);
             client.setControlEncoding("UTF-8");
@@ -228,23 +202,29 @@ public class MainController {
     // -------------------------------------------- FILES UPLOADING METHODS
 
     @PostMapping("/upload")
-    public String upload(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+    public String upload(@RequestParam("file") MultipartFile file, HttpServletRequest request, Model model) {
         // Session check
         HttpSession session = request.getSession();
         String name = (String) session.getAttribute("name");
-        String pass = (String) session.getAttribute("password");
 
         if(name == null) {
             return "redirect:/login";
         }
 
+        HelpingMethodsController.userNameFileDebuger(name);
+
         // getting and setting file info
         String fileName = file.getOriginalFilename();
         String dir = "/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/";
-        Path path = Paths.get(dir);
+        Path path = Paths.get(dir + "/");
         try {
-            Files.createDirectories(path);
+            if(!Files.exists(path)) {
+                Files.createDirectories(path);
+            } else {
+                FileUtils.cleanDirectory(new File(dir));
+            }
         } catch(Exception ex) {
+            model.addAttribute("error_message", "Не получилось создать Вашу директорию на сервере");
             return "error";
         }
 
@@ -255,18 +235,27 @@ public class MainController {
 
             // saving uploaded files into client directory
             try(InputStream stream = file.getInputStream()) {
-                Path filePath = path.resolve(fileName);
+                Path filePath;
+
+                if(fileName != null) {
+                    filePath = path.resolve(fileName);
+                } else {
+                    return "error";
+                }
+
                 FileUtils.cleanDirectory(new File(dir));
                 Files.copy(stream, filePath, StandardCopyOption.REPLACE_EXISTING);
             } catch (Exception e) {
+                model.addAttribute("error_message", "Ошибка копирования файла на сервер");
                 return "error";
             }
         } catch (Exception ex) {
+            model.addAttribute("error_message", "Ошибка копирования файла на сервер");
             return "error";
         }
 
         // streaming that file into ftp server via custom method
-        if(HelpingMethodsController.upload(name, pass, fileName)) {
+        if(HelpingMethodsController.upload(name, client, fileName)) {
             try {
                 FileUtils.cleanDirectory(new File(dir));
             } catch (Exception ignored) {}
@@ -275,6 +264,7 @@ public class MainController {
             try {
                 FileUtils.cleanDirectory(new File(dir));
             } catch (Exception ignored) {}
+            model.addAttribute("error_message", "Ошибка копирования файла на файловый сервер");
             return "error";
         }
     }
@@ -287,7 +277,7 @@ public class MainController {
         /*
         *   basically all it does is removing
         *   session attributes with ftp client's
-        *   mane and password and then redirecting
+        *   name and password and then redirecting
         *   to login page
         *  */
 
@@ -314,17 +304,54 @@ public class MainController {
 
     @PostMapping("login")
     public String loginPost(@RequestParam String name, @RequestParam String password, HttpServletRequest request, Model model) {
+        // getting session data and request parameters from login form
         HttpSession session = request.getSession();
         UserModel user = new UserModel();
         user.setName(name);
         user.setPassword(password);
 
+        // login attempt
         String response = service.login(user);
 
         if(response.equals("OK")) {
+            // if OK than setting session attributes
             session.setAttribute("name", name);
             session.setAttribute("password", password);
-            return "redirect:/";
+
+            // and creating FTP connection
+            client = new FTPClient();
+            FTPServerData data = new FTPServerData();
+
+            try {
+                client.connect(data.getUrl(), data.getPort());
+                client.setControlEncoding("UTF-8");
+                int ftpResponse = client.getReplyCode();
+
+                if(!FTPReply.isPositiveCompletion(ftpResponse)) {
+                    model.addAttribute("is_hidden", false);
+                    model.addAttribute("error_message", "Внутренняя ошибка сервера");
+                    return "login";
+                }
+
+                try {
+                    if(client.login(name, password)) {
+                        return "redirect:/";
+                    }
+                } catch (Exception ex) {
+                    model.addAttribute("is_hidden", false);
+                    model.addAttribute("error_message", "Не удалось подключиться к серверному аккаунту");
+                    return "login";
+                }
+            } catch (Exception e) {
+                model.addAttribute("is_hidden", false);
+                model.addAttribute("error_message", "Не удалось подключиться к файловому серверу");
+                return "login";
+            }
+
+            model.addAttribute("is_hidden", false);
+            model.addAttribute("error_message", "Не удалось подключиться к файловому серверу");
+            return "login";
+
         } else if(response.equals("NO USER")) {
             model.addAttribute("is_hidden", false);
             model.addAttribute("error_message", "Неправильный логин или пароль");

@@ -1,11 +1,13 @@
 package org.barbaris.ftpclient.controller;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.barbaris.ftpclient.models.FTPServerData;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class HelpingMethodsController {
@@ -71,7 +73,14 @@ public class HelpingMethodsController {
     // DOWNLOAD FROM FTP SERVER METHOD
     public static boolean download(FTPClient client, String files, String name) {
         try {
-            Files.createDirectories(Paths.get("/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/"));
+            String dir = "/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/";
+            Path path = Paths.get(dir);
+
+            if(!Files.exists(path)) {
+                Files.createDirectories(path);
+            } else {
+                FileUtils.cleanDirectory(new File(dir));
+            }
 
             String[] fileNames = files.split(";");
             String[] remoteFileNames = client.listNames();
@@ -107,28 +116,34 @@ public class HelpingMethodsController {
     }
 
     // UPLOAD TO FTP SERVER METHOD
-    public static boolean upload(String name, String pass, String fileName) {
+    public static boolean upload(String name, FTPClient client, String fileName) {
         // crating connection
-        FTPClient client = new FTPClient();
-        FTPServerData data = new FTPServerData();
+        //FTPClient client = new FTPClient();
+        //FTPServerData data = new FTPServerData();
 
         try {
-            client.connect(data.getUrl(), data.getPort());
+            //client.connect(data.getUrl(), data.getPort());
+
+            /*
             if(client.login(name, pass)) {
-                client.enterLocalPassiveMode();
-                client.setFileType(FTP.BINARY_FILE_TYPE);
 
-                // saving file into ftp server
-                File localFile = new File("/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/" + fileName);
-                InputStream stream = new FileInputStream(localFile);
-                boolean success = client.storeFile(fileName, stream);
-                stream.close();
-
-                if(success) {
-                    return true;
-                }
             } else {
                 return false;
+            }
+            */
+
+
+            client.enterLocalPassiveMode();
+            client.setFileType(FTP.BINARY_FILE_TYPE);
+
+            // saving file into ftp server
+            File localFile = new File("/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/" + fileName);
+            InputStream stream = new FileInputStream(localFile);
+            boolean success = client.storeFile(fileName, stream);
+            stream.close();
+
+            if(success) {
+                return true;
             }
 
         } catch (Exception ex) {
@@ -139,4 +154,14 @@ public class HelpingMethodsController {
     }
 
 
+    public static void userNameFileDebuger(String name) {
+        String dir = "/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name;
+        Path path = Paths.get(dir);
+
+        try {
+            if(Files.exists(path)) {
+                Files.delete(path);
+            }
+        } catch (Exception ignored) {}
+    }
 }
