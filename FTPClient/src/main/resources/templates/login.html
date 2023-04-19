@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="css/index.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" integrity="sha384-b6lVK+yci+bfDmaY1u0zE8YYJt0TZxLEAFyYSLHId4xoVvsrQu3INevFKo+Xir8e" crossorigin="anonymous">
     <title>Вход</title>
 </head>
 <body style="background-color: #373737;">
@@ -22,8 +23,10 @@
             <div class="col-9">
                 <input type="password" placeholder="Пароль" id="password" name="password" class="mt-2 form-control">
             </div>
-            <div class="col-1" style="display:flex;align-items: center;">
-                <img src="default.png" style="width: 40px; height: 40px;">
+            <div class="col-1" id="show_pass" style="display:flex; align-items: center; cursor: pointer;">
+                <div class="fs-2 mb-1">
+                    <i class="bi bi-eye-fill" id="img" style="width: 60px; height: 60px; color: aliceblue;"></i>
+                </div>
             </div>
         </div>
         
@@ -37,4 +40,7 @@
         </div>
     </form>
 </body>
+
+<script src="js/login.js"></script>
+
 </html>

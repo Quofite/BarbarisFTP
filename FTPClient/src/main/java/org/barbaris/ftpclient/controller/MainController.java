@@ -295,6 +295,7 @@ public class MainController {
         if(name != null) {
             session.removeAttribute("name");
             session.removeAttribute("password");
+            session.setAttribute("SameSite", "None");
         }
 
         model.addAttribute("is_hidden", true);
@@ -317,6 +318,7 @@ public class MainController {
             // if OK than setting session attributes
             session.setAttribute("name", name);
             session.setAttribute("password", password);
+            session.setAttribute("SameSite", "None");
 
             // and creating FTP connection
             client = new FTPClient();
@@ -377,6 +379,32 @@ public class MainController {
 
         model.addAttribute("is_hidden", true);
         model.addAttribute("error_message", "-");
+        return "register";
+    }
+
+    @PostMapping("/register")
+    public String registerPost(@RequestParam String name, @RequestParam String password, Model model) {
+        UserModel user = new UserModel();
+        user.setName(name);
+        user.setPassword(password);
+
+        String response = service.register(user);
+
+        switch (response) {
+            case "OK":
+                return "redirect:/";
+            case "COULD NOT CREATE USER":
+                model.addAttribute("error_message", "Не удалось создать пользователя");
+                break;
+            case "EXISTS":
+                model.addAttribute("error_message", "Пользователь с таким именем уже существует");
+                break;
+            default:
+                model.addAttribute("error_message", "Внутренняя ошибка сервера");
+                break;
+        }
+
+        model.addAttribute("is_hidden", false);
         return "register";
     }
 

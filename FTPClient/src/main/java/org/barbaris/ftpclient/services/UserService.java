@@ -31,8 +31,21 @@ public class UserService implements IUserService {
 
     @Override
     public String register(UserModel user) {
+        String sql = String.format("SELECT * FROM ftpusers WHERE name='%s';", user.getName());
+        List<Map<String, Object>> rows = template.queryForList(sql);
 
+        if(rows.size() > 0) {
+            return "EXISTS";
+        }
 
-        return null;
+        sql = String.format("INSERT INTO ftpusers(name, password) VALUES ('%s', '%s');", user.getName(), user.getPassword());
+
+        try {
+            template.execute(sql);
+        } catch (Exception ex) {
+            return "COULD NOT CREATE USER";
+        }
+
+        return "OK";
     }
 }
