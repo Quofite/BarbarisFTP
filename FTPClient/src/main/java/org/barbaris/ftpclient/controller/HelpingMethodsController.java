@@ -117,22 +117,8 @@ public class HelpingMethodsController {
 
     // UPLOAD TO FTP SERVER METHOD
     public static boolean upload(String name, FTPClient client, String fileName) {
-        // crating connection
-        //FTPClient client = new FTPClient();
-        //FTPServerData data = new FTPServerData();
 
         try {
-            //client.connect(data.getUrl(), data.getPort());
-
-            /*
-            if(client.login(name, pass)) {
-
-            } else {
-                return false;
-            }
-            */
-
-
             client.enterLocalPassiveMode();
             client.setFileType(FTP.BINARY_FILE_TYPE);
 
@@ -141,10 +127,6 @@ public class HelpingMethodsController {
             File localFile = new File("/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/" + fileName);
             InputStream stream = new FileInputStream(localFile);
             boolean success = client.storeFile(fileName, stream);
-            System.out.println(fileName);
-            System.out.println(localFile);
-            System.out.println(client.getReplyCode());
-            System.out.println(client.getReplyString());
             stream.close();
 
             if(success) {
@@ -171,3 +153,22 @@ public class HelpingMethodsController {
         } catch (Exception ignored) {}
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

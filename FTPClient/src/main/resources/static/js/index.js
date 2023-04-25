@@ -34,3 +34,39 @@ document.getElementById("download").addEventListener("click", (e) => {
 
     request.send();
 });
+
+document.getElementById("delete").addEventListener("click", (e) => {
+    e.preventDefault();
+
+    var boxes = document.querySelectorAll(".check");
+    var requestString = "";
+
+    for (let i = 0; i < boxes.length; i++) {
+        if(boxes[i].checked) {
+            requestString += boxes[i].name + ";";
+        }
+    }
+
+    var confirmation = confirm("Удалить выбранные файлы?");
+
+    if(confirmation) {
+        var request = new XMLHttpRequest();
+        request.open("GET", "/delete?files=" + requestString, false);
+
+        request.addEventListener("load", (e) => {
+            var code = request.status;
+            var errorBox = document.getElementById("error");
+            var errorMessage = document.getElementById("error_message");
+        
+            if(code === 404) {
+                errorBox.removeAttribute("hidden");
+                errorMessage.innerText = "Файл не найден";
+            }
+
+            window.location.reload();
+        });
+
+        request.send();
+    }
+
+});

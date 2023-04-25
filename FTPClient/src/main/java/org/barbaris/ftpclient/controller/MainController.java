@@ -269,6 +269,41 @@ public class MainController {
         }
     }
 
+    // --------------------------------------------- DELETE FILES
+
+    @GetMapping("/delete")
+    public ResponseEntity delete(@RequestParam("files") String files, HttpServletRequest request, Model model) {
+        HttpSession session = request.getSession();
+        String name = (String) session.getAttribute("name");
+
+        if(name == null) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Location", "/login");
+            return new ResponseEntity<String>(headers, HttpStatus.FOUND);
+        }
+
+        String[] fileNames = files.split(";");
+
+        for (String fileName : fileNames) {
+            try {
+                boolean success = client.deleteFile(fileName);
+
+                if(!success) {
+                    System.out.println(fileName + " wasn't delete");
+                }
+
+            } catch (Exception ex) {
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("Location", "/");
+                return new ResponseEntity<String>(headers, HttpStatus.NOT_FOUND);
+            }
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Location", "/");
+        return new ResponseEntity<String>(headers, HttpStatus.OK);
+    }
+
 
     // --------------------------------------------- LOGIN AND LOGOUT METHODS
 
