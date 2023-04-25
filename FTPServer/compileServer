@@ -1,0 +1,5 @@
+#!/bin/bash
+cd "/home/gleb/Coding/FTP/FTPServer/"
+mvn clean package assembly:single
+cd "/home/gleb/Coding/FTP/FTPServer/target"
+java -jar FTPServer-1.0-SNAPSHOT-jar-with-dependencies.jar

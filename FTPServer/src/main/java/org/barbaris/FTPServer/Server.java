@@ -13,6 +13,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class Server {
@@ -26,10 +29,12 @@ public class Server {
     public static void initUser(String name, String password) {
         UserManager userManager = userManagerFactory.createUserManager();
 
+        String dir = "/home/gleb/Coding/FTP/FTPServer/src/main/resources/" + name + "/";
+
         BaseUser user = new BaseUser();
         user.setName(name);
         user.setPassword(password);
-        user.setHomeDirectory("/home/gleb/Coding/FTP/FTPServer/src/main/resources/" + name + "/");
+        user.setHomeDirectory(dir);
 
         List<Authority> authorities = new ArrayList<>();
         authorities.add(new WritePermission());
@@ -37,6 +42,12 @@ public class Server {
 
         try {
             userManager.save(user);
+
+            Path path = Paths.get(dir);
+            if(!Files.exists(path)) {
+                Files.createDirectory(path);
+            }
+
         } catch (Exception ignored) {}
 
         server.setUserManager(userManager);

@@ -136,10 +136,15 @@ public class HelpingMethodsController {
             client.enterLocalPassiveMode();
             client.setFileType(FTP.BINARY_FILE_TYPE);
 
+
             // saving file into ftp server
             File localFile = new File("/home/gleb/Coding/FTP/FTPClient/src/main/resources/static/files/" + name + "/" + fileName);
             InputStream stream = new FileInputStream(localFile);
             boolean success = client.storeFile(fileName, stream);
+            System.out.println(fileName);
+            System.out.println(localFile);
+            System.out.println(client.getReplyCode());
+            System.out.println(client.getReplyString());
             stream.close();
 
             if(success) {
@@ -147,6 +152,7 @@ public class HelpingMethodsController {
             }
 
         } catch (Exception ex) {
+            System.out.println(ex.getCause().toString());
             return false;
         }
 
